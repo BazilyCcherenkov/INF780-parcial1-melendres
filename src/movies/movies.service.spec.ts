@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ObjectLiteral, Repository } from 'typeorm';
+import { ObjectLiteral, Repository, MoreThanOrEqual } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { Movie } from './entities/movie.entity';
@@ -66,7 +66,7 @@ describe('MoviesService', () => {
   });
 
   describe('search', () => {
-    it('debe buscar películas sin filtros', async () => {
+    it('B1: debe buscar películas sin filtros', async () => {
       const movies = [mockMovie];
       repository.find = jest.fn().mockResolvedValue(movies);
 
@@ -76,17 +76,17 @@ describe('MoviesService', () => {
       expect(result).toEqual(movies);
     });
 
-    it('debe buscar por género', async () => {
+    it('B2: debe buscar por género', async () => {
       repository.find = jest.fn().mockResolvedValue([mockMovie]);
 
-      await service.search({ genre: Genre.SCIFI });
+      await service.search({ genre: Genre.DRAMA });
 
       expect(repository.find).toHaveBeenCalledWith({
-        where: { genre: Genre.SCIFI },
+        where: { genre: Genre.DRAMA },
       });
     });
 
-    it('debe buscar por año', async () => {
+    it('B3: debe buscar por año', async () => {
       repository.find = jest.fn().mockResolvedValue([mockMovie]);
 
       await service.search({ year: 2010 });
@@ -96,45 +96,37 @@ describe('MoviesService', () => {
       });
     });
 
-    it('debe combinar filtros género y año', async () => {
+    it('B4: debe buscar por minRating usando MoreThanOrEqual', async () => {
+      repository.find = jest.fn().mockResolvedValue([mockMovie]);
+
+      await service.search({ minRating: 8.0 });
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { rating: MoreThanOrEqual(8.0) },
+      });
+    });
+
+    it('B5: debe combinar los tres filtros', async () => {
       repository.find = jest.fn().mockResolvedValue([mockMovie]);
 
       await service.search({
         genre: Genre.SCIFI,
         year: 2010,
+        minRating: 8.0,
       });
 
       expect(repository.find).toHaveBeenCalledWith({
-        where: { genre: Genre.SCIFI, year: 2010 },
+        where: { genre: Genre.SCIFI, year: 2010, rating: MoreThanOrEqual(8.0) },
       });
     });
 
-    it('debe filtrar minRating en memoria', async () => {
-      const moviesWithDifferentRatings = [
-        { ...mockMovie, rating: 5.0 },
-        { ...mockMovie, id: '2', rating: 8.0 },
-      ];
-      repository.find = jest.fn().mockResolvedValue(moviesWithDifferentRatings);
+    it('B6: debe retornar array vacío si no hay coincidencias', async () => {
+      repository.find = jest.fn().mockResolvedValue([]);
 
-      const result = await service.search({ minRating: 7.0 });
+      const result = await service.search({ genre: Genre.HORROR });
 
-      expect(result).toHaveLength(1);
-      expect(result[0].rating).toBe(8.0);
-    });
-
-    it('debe combinar los tres filtros', async () => {
-      repository.find = jest.fn().mockResolvedValue([mockMovie]);
-
-      const result = await service.search({
-        genre: Genre.SCIFI,
-        year: 2010,
-        minRating: 7.0,
-      });
-
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { genre: Genre.SCIFI, year: 2010 },
-      });
-      expect(result).toHaveLength(1);
+      expect(result).toEqual([]);
+      expect(result).toHaveLength(0);
     });
   });
 
