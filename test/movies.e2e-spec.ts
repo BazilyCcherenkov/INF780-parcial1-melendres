@@ -51,5 +51,78 @@ describe('Movies E2E', () => {
     await app.close();
   });
 
+  describe('GET /movies/search', () => {
+    it('debe retornar todas las películas sin filtros', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toBeInstanceOf(Array);
+    });
+
+    it('debe filtrar por género', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?genre=sci-fi');
+
+      expect(response.status).toBe(200);
+    });
+
+    it('debe filtrar por año', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?year=2010');
+
+      expect(response.status).toBe(200);
+    });
+
+    it('debe filtrar por minRating', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?minRating=8.5');
+
+      expect(response.status).toBe(200);
+    });
+
+    it('debe combinar género y año', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/movies/search?genre=sci-fi&year=2010');
+
+      expect(response.status).toBe(200);
+    });
+
+    it('debe combinar año y minRating', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/movies/search?year=2010&minRating=8.5');
+
+      expect(response.status).toBe(200);
+    });
+
+    it('debe combinar género y minRating', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/movies/search?genre=drama&minRating=9.0');
+
+      expect(response.status).toBe(200);
+    });
+
+    it('debe combinar los tres filtros', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/movies/search?genre=drama&year=1994&minRating=9.0');
+
+      expect(response.status).toBe(200);
+    });
+
+    it('debe retornar 422 para género inválido', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?genre=invalid');
+
+      expect(response.status).toBe(422);
+    });
+
+    it('debe retornar 422 para año inválido', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?year=1800');
+
+      expect(response.status).toBe(422);
+    });
+
+    it('debe retornar 422 para minRating inválido', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?minRating=15');
+
+      expect(response.status).toBe(422);
+    });
+  });
+
   // Aquí las pruebas
 });

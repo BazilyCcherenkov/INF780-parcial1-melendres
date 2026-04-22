@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
@@ -15,11 +16,13 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { MoviesService } from './movies.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
-import { Movie } from './entities/movie.entity';
+import { SearchMoviesDto } from './dto/search-movies.dto';
+import { Movie, Genre } from './entities/movie.entity';
 
 @ApiTags('movies')
 @Controller('movies')
@@ -39,6 +42,17 @@ export class MoviesController {
   @ApiResponse({ status: 200, description: 'Lista de películas', type: [Movie] })
   findAll(): Promise<Movie[]> {
     return this.moviesService.findAll();
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Buscar películas aplicando filtros opcionales' })
+  @ApiQuery({ name: 'genre', required: false, enum: Genre, description: 'Filtrar por género (action, comedy, drama, horror, sci-fi, thriller, romance, documentary, animation)' })
+  @ApiQuery({ name: 'year', required: false, description: 'Año de la película (1888-2030)' })
+  @ApiQuery({ name: 'minRating', required: false, description: 'Rating mínimo (0.0-10.0)' })
+  @ApiResponse({ status: 200, description: 'Resultados de búsqueda', type: [Movie] })
+  @ApiResponse({ status: 422, description: 'Error de validación de datos' })
+  search(@Query() searchDto: SearchMoviesDto): Promise<Movie[]> {
+    return this.moviesService.search(searchDto);
   }
 
   @Get(':id')

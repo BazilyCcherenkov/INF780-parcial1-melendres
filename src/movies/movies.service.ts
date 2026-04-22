@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Movie } from './entities/movie.entity';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
+import { SearchMoviesDto } from './dto/search-movies.dto';
 
 @Injectable()
 export class MoviesService {
@@ -38,5 +39,27 @@ export class MoviesService {
   async remove(id: string): Promise<void> {
     const movie = await this.findOne(id);
     await this.movieRepository.remove(movie);
+  }
+
+  async search(searchDto: SearchMoviesDto): Promise<Movie[]> {
+    const where: any = {};
+
+    if (searchDto.genre) {
+      where.genre = searchDto.genre;
+    }
+
+    if (searchDto.year) {
+      where.year = searchDto.year;
+    }
+
+    const movies = await this.movieRepository.find({ where });
+
+    let filteredMovies = movies;
+
+    if (searchDto.minRating !== undefined) {
+      filteredMovies = filteredMovies.filter(m => m.rating >= searchDto.minRating!);
+    }
+
+    return filteredMovies;
   }
 }

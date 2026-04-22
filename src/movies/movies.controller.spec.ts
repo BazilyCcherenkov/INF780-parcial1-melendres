@@ -12,6 +12,7 @@ const mockMoviesService = {
   findOne: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
+  search: jest.fn(),
 };
 
 const movieData = {
@@ -69,6 +70,54 @@ describe('MoviesController (Integration)', () => {
 
   afterAll(async () => {
     await app.close();
+  });
+
+  describe('GET /movies/search', () => {
+    it('debe retornar todas las películas sin filtros', async () => {
+      mockMoviesService.search.mockResolvedValue([mockMovie]);
+
+      const response = await request(app.getHttpServer()).get('/movies/search');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(1);
+    });
+
+    it('debe filtrar por género', async () => {
+      mockMoviesService.search.mockResolvedValue([mockMovie]);
+
+      const response = await request(app.getHttpServer()).get('/movies/search?genre=sci-fi');
+
+      expect(response.status).toBe(200);
+      expect(mockMoviesService.search).toHaveBeenCalled();
+    });
+
+    it('debe filtrar por año', async () => {
+      mockMoviesService.search.mockResolvedValue([mockMovie]);
+
+      const response = await request(app.getHttpServer()).get('/movies/search?year=2010');
+
+      expect(response.status).toBe(200);
+      expect(mockMoviesService.search).toHaveBeenCalled();
+    });
+
+    it('debe filtrar por minRating', async () => {
+      mockMoviesService.search.mockResolvedValue([mockMovie]);
+
+      const response = await request(app.getHttpServer()).get('/movies/search?minRating=7.0');
+
+      expect(response.status).toBe(200);
+      expect(mockMoviesService.search).toHaveBeenCalled();
+    });
+
+    it('debe combinar los tres filtros', async () => {
+      mockMoviesService.search.mockResolvedValue([mockMovie]);
+
+      const response = await request(app.getHttpServer())
+        .get('/movies/search?genre=sci-fi&year=2010&minRating=8.5');
+
+      expect(response.status).toBe(200);
+      expect(mockMoviesService.search).toHaveBeenCalled();
+    });
   });
 
   // Aquí las pruebas
