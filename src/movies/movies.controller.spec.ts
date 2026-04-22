@@ -73,50 +73,73 @@ describe('MoviesController (Integration)', () => {
   });
 
   describe('GET /movies/search', () => {
-    it('debe retornar todas las películas sin filtros', async () => {
+    it('C1: debe retornar todas las películas sin filtros', async () => {
       mockMoviesService.search.mockResolvedValue([mockMovie]);
 
       const response = await request(app.getHttpServer()).get('/movies/search');
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveLength(1);
+      expect(mockMoviesService.search).toHaveBeenCalledWith({});
     });
 
-    it('debe filtrar por género', async () => {
+    it('C2: debe filtrar por género', async () => {
       mockMoviesService.search.mockResolvedValue([mockMovie]);
 
-      const response = await request(app.getHttpServer()).get('/movies/search?genre=sci-fi');
+      const response = await request(app.getHttpServer()).get('/movies/search?genre=drama');
 
       expect(response.status).toBe(200);
-      expect(mockMoviesService.search).toHaveBeenCalled();
+      expect(mockMoviesService.search).toHaveBeenCalledWith({ genre: Genre.DRAMA });
     });
 
-    it('debe filtrar por año', async () => {
+    it('C3: debe convertir query params a números', async () => {
       mockMoviesService.search.mockResolvedValue([mockMovie]);
 
-      const response = await request(app.getHttpServer()).get('/movies/search?year=2010');
+      const response = await request(app.getHttpServer()).get('/movies/search?year=2010&minRating=8.5');
 
       expect(response.status).toBe(200);
-      expect(mockMoviesService.search).toHaveBeenCalled();
+      expect(mockMoviesService.search).toHaveBeenCalledWith(
+        expect.objectContaining({
+          year: expect.any(Number),
+          minRating: expect.any(Number),
+        }),
+      );
+      const callArgs = mockMoviesService.search.mock.calls[0][0];
+      expect(callArgs.year).toBe(2010);
+      expect(callArgs.minRating).toBe(8.5);
     });
 
-    it('debe filtrar por minRating', async () => {
-      mockMoviesService.search.mockResolvedValue([mockMovie]);
+    it('C4: debe retornar 422 para género inválido', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?genre=unknown');
 
-      const response = await request(app.getHttpServer()).get('/movies/search?minRating=7.0');
-
-      expect(response.status).toBe(200);
-      expect(mockMoviesService.search).toHaveBeenCalled();
+      expect(response.status).toBe(422);
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/genre/i),
+        ]),
+      );
     });
 
-    it('debe combinar los tres filtros', async () => {
-      mockMoviesService.search.mockResolvedValue([mockMovie]);
+    it('C5: debe retornar 422 para año fuera de rango', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?year=1500');
 
-      const response = await request(app.getHttpServer())
-        .get('/movies/search?genre=sci-fi&year=2010&minRating=8.5');
+      expect(response.status).toBe(422);
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/year/i),
+        ]),
+      );
+    });
 
-      expect(response.status).toBe(200);
-      expect(mockMoviesService.search).toHaveBeenCalled();
+    it('C6: debe retornar 422 para minRating fuera de rango', async () => {
+      const response = await request(app.getHttpServer()).get('/movies/search?minRating=11');
+
+      expect(response.status).toBe(422);
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/minRating/i),
+        ]),
+      );
     });
   });
 
